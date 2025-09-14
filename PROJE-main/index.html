@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yapay Zeka Destekli Sulama Asistanı</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fefce8; /* yellow-50, a warm, earthy tone */
+            background-image: linear-gradient(to bottom right, #fefce8, #f1f5f9);
+        }
+        .card {
+            background-color: white;
+            border-radius: 16px; /* More rounded */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); /* Softer, larger shadow */
+            padding: 2.5rem; /* More padding */
+            transition: all 0.3s ease-in-out;
+        }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db; /* gray-300 */
+            border-radius: 8px;
+            background-color: #f9fafb; /* Input background */
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #16a34a; /* green-600 */
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.3);
+            background-color: white;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: none;
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06);
+        }
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+        }
+        .btn-primary {
+            background-color: #16a34a; /* green-600 */
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #15803d; /* green-700 */
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .btn-icon {
+            flex-shrink: 0; /* Prevent button from shrinking */
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            background-color: #e5e7eb; /* gray-200 */
+            color: #4b5563; /* gray-600 */
+        }
+        .btn-icon:hover:not(:disabled) {
+            background-color: #d1d5db; /* gray-300 */
+            color: #1f2937; /* gray-800 */
+        }
+        /* Radio button custom styling */
+        .radio-label {
+            border: 2px solid #e5e7eb; /* Thicker border */
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            text-align: center;
+            font-weight: 500;
+        }
+        input[type="radio"]:checked + .radio-label {
+            background-color: #f0fdf4; /* green-50 */
+            border-color: #16a34a; /* green-600 */
+            color: #15803d; /* green-700 */
+            font-weight: 600;
+        }
+        /* Spinner Animation */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #16a34a; /* green-600 */
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <main class="w-full max-w-4xl mx-auto">
+        <div class="card">
+            <div class="text-center mb-10">
+                <h1 class="text-3xl md:text-4xl font-bold text-green-900">🌿 Sulama Asistanı</h1>
+                <p class="text-gray-500 mt-2">Bitkiniz için en doğru sulama programını oluşturun.</p>
+            </div>
+
+            <!-- Veri Yükleme Durumu -->
+            <div id="data-loading-status" class="mb-8 text-center p-4 rounded-lg bg-gray-50 text-gray-600">
+                <i class="fas fa-spinner fa-spin mr-2"></i>
+                <span>Veri dosyaları yükleniyor...</span>
+            </div>
+            
+            <form id="irrigationForm">
+                 <fieldset id="form-fieldset" disabled class="space-y-8">
+                    <!-- Bölüm 1: Temel Bilgiler -->
+                    <div class="grid md:grid-cols-2 gap-x-6 gap-y-6">
+                        <div>
+                            <label for="plant" class="font-semibold text-gray-700 block mb-2">Bitki Türü</label>
+                            <select id="plant" class="form-select" required><option>Veriler yükleniyor...</option></select>
+                        </div>
+                        <div>
+                            <label for="date" class="font-semibold text-gray-700 block mb-2">Ekim Tarihi</label>
+                            <input type="date" id="date" class="form-input" required>
+                        </div>
+                    </div>
+
+                    <!-- Bölüm 2: Yetiştirme Ortamı -->
+                    <div>
+                        <label class="font-semibold text-gray-700 block mb-2">Yetiştirme Ortamı</label>
+                        <div class="grid grid-cols-2 gap-4 mt-2">
+                            <div>
+                                <input type="radio" id="field" name="environment" value="field" class="hidden" checked>
+                                <label for="field" class="radio-label"><i class="fas fa-tractor mr-2"></i>Tarla</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="pot" name="environment" value="pot" class="hidden">
+                                <label for="pot" class="radio-label"><i class="fas fa-leaf mr-2"></i>Saksı</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bölüm 3: Ortama Özel Bilgiler -->
+                    <div id="environment-inputs-container">
+                        <div id="field-container">
+                            <label for="area" class="font-semibold text-gray-700 block mb-2">Yetiştirme Alanı (m²)</label>
+                            <input type="number" id="area" min="0.1" step="0.1" class="form-input" placeholder="Örn: 50" required>
+                        </div>
+                        <div id="pot-container" class="hidden">
+                            <label for="pot-volume" class="font-semibold text-gray-700 block mb-2">Saksı Hacmi (Litre)</label>
+                            <input type="number" id="pot-volume" min="0.1" step="0.1" class="form-input" placeholder="Örn: 15">
+                        </div>
+                    </div>
+
+                    <!-- Bölüm 4: Toprak ve Konum -->
+                    <div class="grid md:grid-cols-2 gap-x-6 gap-y-6">
+                        <div>
+                            <label for="soil" class="font-semibold text-gray-700 block mb-2">Toprak Tipi</label>
+                            <select id="soil" class="form-select" required><option>Veriler yükleniyor...</option></select>
+                        </div>
+                        <div>
+                            <label for="latitude" class="font-semibold text-gray-700 block mb-2">Enlem & Boylam</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="latitude" step="any" class="form-input" placeholder="Enlem" required>
+                                <input type="number" id="longitude" step="any" class="form-input" placeholder="Boylam" required>
+                                <button type="button" id="locate-btn" class="btn btn-icon" title="Konumumu Bul">
+                                    <i class="fas fa-crosshairs"></i>
+                                </button>
+                            </div>
+                             <p id="location-status" class="text-xs text-gray-500 mt-1 h-4"></p>
+                        </div>
+                    </div>
+
+                    <!-- Bölüm 5: Hesapla Butonu -->
+                    <div class="pt-6 text-center">
+                        <button type="submit" id="submit-button" class="btn btn-primary w-full md:w-auto text-lg px-8 py-3">
+                            <i class="fas fa-cogs mr-3"></i>Hesapla
+                        </button>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+
+        <!-- Sonuçlar Bölümü -->
+        <div id="results-card" class="card mt-8 hidden">
+            <div id="loading-container" class="text-center">
+                <div class="spinner mx-auto"></div>
+                <p class="mt-4 text-gray-600">Hava durumu verileri alınıyor ve sulama programı hesaplanıyor...</p>
+            </div>
+            <div id="results-container" class="hidden">
+                <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">💧 7 Günlük Sulama Programı</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahmini ET₀ (mm)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahmini Yağış (mm)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sulama Önerisi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+                 <p id="result-summary" class="text-center text-sm text-gray-500 mt-4"></p>
+            </div>
+             <div id="error-container" class="hidden text-center text-red-600 bg-red-50 p-4 rounded-lg">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <span id="error-message"></span>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // --- GLOBAL VERİ DEPOLARI ---
+            let plantData = {};
+            let soilData = {};
+
+            // --- ELEMENTLER ---
+            const form = document.getElementById('irrigationForm');
+            const formFieldset = document.getElementById('form-fieldset');
+            const dataLoadingStatus = document.getElementById('data-loading-status');
+            const submitButton = document.getElementById('submit-button');
+            const plantSelect = document.getElementById('plant');
+            const soilSelect = document.getElementById('soil');
+            const fieldRadio = document.getElementById('field');
+            const potRadio = document.getElementById('pot');
+            const fieldContainer = document.getElementById('field-container');
+            const potContainer = document.getElementById('pot-container');
+            const areaInput = document.getElementById('area');
+            const potVolumeInput = document.getElementById('pot-volume');
+            const latitudeInput = document.getElementById('latitude');
+            const longitudeInput = document.getElementById('longitude');
+            const locateBtn = document.getElementById('locate-btn');
+            const locationStatus = document.getElementById('location-status');
+            const resultsCard = document.getElementById('results-card');
+            const loadingContainer = document.getElementById('loading-container');
+            const resultsContainer = document.getElementById('results-container');
+            const errorContainer = document.getElementById('error-container');
+            const errorMessage = document.getElementById('error-message');
+            const resultsTableBody = document.getElementById('results-table-body');
+            const resultSummary = document.getElementById('result-summary');
+
+            // --- CSV PARSER FONKSİYONLARI ---
+            function parsePlantCsv(csvText) {
+                const data = {};
+                const lines = csvText.trim().split('\n');
+                const headers = lines[0].split(',').map(h => h.trim());
+                const nameIndex = headers.indexOf('plant_name');
+                const stageIndex = headers.indexOf('stage');
+                const durationIndex = headers.indexOf('duration_days');
+                const kcIndex = headers.indexOf('kc_value');
+
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(',').map(v => v.trim());
+                    const plantName = values[nameIndex];
+                    if (!data[plantName]) {
+                        data[plantName] = { growth_stages: {} };
+                    }
+                    const stage = values[stageIndex];
+                    data[plantName].growth_stages[stage] = {
+                        duration: parseFloat(values[durationIndex]),
+                        kc: parseFloat(values[kcIndex])
+                    };
+                }
+                return data;
+            }
+
+            function parseSoilCsv(csvText) {
+                const data = {};
+                const lines = csvText.trim().split('\n');
+                const headers = lines[0].split(',').map(h => h.trim());
+                const nameIndex = headers.indexOf('soil_name');
+                const awcIndex = headers.indexOf('awc_mm_per_m');
+
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(',').map(v => v.trim());
+                    const soilName = values[nameIndex];
+                    data[soilName] = parseFloat(values[awcIndex]);
+                }
+                return data;
+            }
+            
+            // --- OTOMATİK VERİ YÜKLEME ---
+            async function loadInitialData() {
+                try {
+                    const [plantResponse, soilResponse] = await Promise.all([
+                        fetch('./plant_data.csv'),
+                        fetch('./soil_data.csv')
+                    ]);
+
+                    if (!plantResponse.ok || !soilResponse.ok) {
+                        throw new Error("Veri dosyaları bulunamadı. Lütfen dosyaların (plant_data.csv, soil_data.csv) index.html ile aynı dizinde olduğundan emin olun.");
+                    }
+
+                    const plantCsvText = await plantResponse.text();
+                    const soilCsvText = await soilResponse.text();
+
+                    plantData = parsePlantCsv(plantCsvText);
+                    soilData = parseSoilCsv(soilCsvText);
+
+                    if (Object.keys(plantData).length === 0 || Object.keys(soilData).length === 0) {
+                         throw new Error("CSV dosyaları boş veya formatları hatalı.");
+                    }
+
+                    populateSelect(plantSelect, plantData);
+                    populateSelect(soilSelect, soilData);
+                    
+                    formFieldset.disabled = false;
+                    dataLoadingStatus.innerHTML = `<i class="fas fa-check-circle text-green-500 mr-2"></i><span>Veriler başarıyla yüklendi.</span>`;
+                    dataLoadingStatus.classList.replace('bg-gray-50', 'bg-green-50');
+
+                } catch (err) {
+                    console.error("Veri yükleme hatası:", err);
+                    dataLoadingStatus.innerHTML = `<i class="fas fa-exclamation-triangle text-red-500 mr-2"></i><span>Hata: ${err.message}</span>`;
+                    dataLoadingStatus.classList.replace('bg-gray-50', 'bg-red-50');
+                }
+            }
+
+            // --- KONUM BULMA FONKSİYONU ---
+            locateBtn.addEventListener('click', () => {
+                if (!navigator.geolocation) {
+                    locationStatus.textContent = "Tarayıcınız konum bulmayı desteklemiyor.";
+                    locationStatus.classList.add('text-red-500');
+                    return;
+                }
+
+                locationStatus.textContent = "Konum bulunuyor...";
+                locationStatus.classList.remove('text-red-500', 'text-green-500');
+                locateBtn.disabled = true;
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        latitudeInput.value = position.coords.latitude.toFixed(4);
+                        longitudeInput.value = position.coords.longitude.toFixed(4);
+                        locationStatus.textContent = "Konum başarıyla bulundu!";
+                        locationStatus.classList.add('text-green-500');
+                        locateBtn.disabled = false;
+                    },
+                    (error) => {
+                        let message = "Konum alınamadı. ";
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED:
+                                message += "Konum iznini reddettiniz.";
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                message += "Konum bilgisi mevcut değil.";
+                                break;
+                            case error.TIMEOUT:
+                                message += "İstek zaman aşımına uğradı.";
+                                break;
+                            default:
+                                message += "Bilinmeyen bir hata oluştu.";
+                                break;
+                        }
+                        locationStatus.textContent = message;
+                        locationStatus.classList.add('text-red-500');
+                        locateBtn.disabled = false;
+                    }
+                );
+            });
+
+            // --- PYTHON KODUNUN JAVASCRIPT VERSİYONU ---
+            function getKc(plantType, dayOfGrowth) {
+                const plant = plantData[plantType];
+                if (!plant) return null;
+                let totalDays = 0;
+                for (const stage of Object.values(plant.growth_stages)) {
+                    totalDays += stage.duration;
+                    if (dayOfGrowth <= totalDays) return stage.kc;
+                }
+                return null;
+            }
+
+            class SoilWaterBalanceModel {
+                constructor(plantingDate, plantType, soilType, isPotted, cultivationAreaM2, potVolumeLiters) {
+                    this.plantingDate = new Date(plantingDate);
+                    this.plantType = plantType;
+                    this.isPotted = isPotted;
+                    this.cultivationAreaM2 = cultivationAreaM2;
+                    this.potVolumeLiters = potVolumeLiters;
+                    this.currentWaterDeficit = 0;
+                    const awcMmPerM = soilData[soilType] || 150;
+                    if (this.isPotted) {
+                        const potDepthM = 0.2;
+                        this.maxAwcMm = awcMmPerM * potDepthM;
+                    } else {
+                        this.maxAwcMm = awcMmPerM;
+                    }
+                }
+                updateAndRecommend(forecastDateStr, et0, rainfall) {
+                    const forecastDate = new Date(forecastDateStr);
+                    const timeDiff = forecastDate.getTime() - this.plantingDate.getTime();
+                    const daysSincePlanting = Math.max(0, Math.ceil(timeDiff / (1000 * 3600 * 24)));
+                    const kc = getKc(this.plantType, daysSincePlanting);
+                    if (kc === null) return { amount: 0, liters: 0, message: "Büyüme evresi tamamlanmış." };
+                    const etc = kc * et0;
+                    this.currentWaterDeficit += etc;
+                    this.currentWaterDeficit -= rainfall;
+                    if (this.currentWaterDeficit < 0) this.currentWaterDeficit = 0;
+                    let irrigationAmountMm = 0;
+                    let message = "Sulama gerekmiyor.";
+                    const irrigationThreshold = this.maxAwcMm * 0.5;
+                    if (this.currentWaterDeficit >= irrigationThreshold) {
+                        irrigationAmountMm = this.currentWaterDeficit;
+                        message = `<strong>${irrigationAmountMm.toFixed(1)} mm</strong> su verin.`;
+                        this.currentWaterDeficit = 0;
+                    }
+                    let liters = 0;
+                    if (irrigationAmountMm > 0) {
+                        if (this.isPotted) {
+                            const totalWaterCapacityLiters = this.potVolumeLiters * 0.5;
+                            liters = (irrigationAmountMm / this.maxAwcMm) * totalWaterCapacityLiters;
+                        } else {
+                            liters = irrigationAmountMm * this.cultivationAreaM2;
+                        }
+                    }
+                    if (liters > 0) message += ` <span class="text-green-600">(${liters.toFixed(2)} Litre)</span>`;
+                    return { amount: irrigationAmountMm, liters, message };
+                }
+            }
+
+            // --- YARDIMCI FONKSİYONLAR ---
+            function populateSelect(selectElement, data) {
+                 selectElement.innerHTML = '<option value="" disabled selected>Seçim yapınız...</option>';
+                for (const key of Object.keys(data)) {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = key;
+                    selectElement.appendChild(option);
+                }
+            }
+            function toggleEnvironmentInputs() {
+                if (fieldRadio.checked) {
+                    fieldContainer.classList.remove('hidden');
+                    potContainer.classList.add('hidden');
+                    areaInput.setAttribute('required', 'required');
+                    potVolumeInput.removeAttribute('required');
+                } else {
+                    fieldContainer.classList.add('hidden');
+                    potContainer.classList.remove('hidden');
+                    areaInput.removeAttribute('required');
+                    potVolumeInput.setAttribute('required', 'required');
+                }
+            }
+            function displayResults(recommendations, summaryInfo) {
+                resultsTableBody.innerHTML = '';
+                recommendations.forEach(rec => {
+                    const row = `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">${new Date(rec.date).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${rec.et0.toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${rec.precipitation.toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-800">${rec.recommendation.message}</td>
+                        </tr>
+                    `;
+                    resultsTableBody.innerHTML += row;
+                });
+                resultSummary.textContent = `${summaryInfo.plant} | ${summaryInfo.soil} | ${summaryInfo.env}`;
+            }
+            function showLoading(isLoading) {
+                submitButton.disabled = isLoading;
+                submitButton.innerHTML = isLoading 
+                    ? '<i class="fas fa-spinner fa-spin mr-2"></i>Hesaplanıyor...' 
+                    : '<i class="fas fa-cogs mr-3"></i>Hesapla';
+                if (isLoading) {
+                    resultsCard.classList.remove('hidden');
+                    loadingContainer.classList.remove('hidden');
+                    resultsContainer.classList.add('hidden');
+                    errorContainer.classList.add('hidden');
+                } else {
+                    loadingContainer.classList.add('hidden');
+                }
+            }
+            function showError(message) {
+                loadingContainer.classList.add('hidden');
+                resultsContainer.classList.add('hidden');
+                errorContainer.classList.remove('hidden');
+                errorMessage.textContent = message;
+            }
+
+            // --- ANA FORM İŞLEYİCİSİ ---
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                showLoading(true);
+                const plant = plantSelect.value;
+                const date = document.getElementById('date').value;
+                const isPotted = potRadio.checked;
+                const soil = soilSelect.value;
+                const latitude = latitudeInput.value;
+                const longitude = longitudeInput.value;
+                const area = areaInput.value;
+                const potVolume = potVolumeInput.value;
+                const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=et0_fao_evapotranspiration,precipitation_sum&forecast_days=7&timezone=auto`;
+                try {
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) throw new Error(`Hava durumu servisiyle bağlantı kurulamadı (Hata: ${response.status})`);
+                    const weatherData = await response.json();
+                    if (!weatherData.daily) throw new Error('API yanıtında beklenen hava durumu verileri bulunamadı.');
+                    const model = new SoilWaterBalanceModel(date, plant, soil, isPotted, parseFloat(area), parseFloat(potVolume));
+                    const recommendations = [];
+                    const dates = weatherData.daily.time;
+                    const et0s = weatherData.daily.et0_fao_evapotranspiration;
+                    const precipitations = weatherData.daily.precipitation_sum;
+                    for (let i = 0; i < dates.length; i++) {
+                        const recommendation = model.updateAndRecommend(dates[i], et0s[i], precipitations[i]);
+                        recommendations.push({ date: dates[i], et0: et0s[i], precipitation: precipitations[i], recommendation: recommendation });
+                    }
+                    const summaryInfo = { plant: plant, soil: soil, env: isPotted ? `${potVolume} Litrelik Saksı` : `${area} m² Tarla` };
+                    displayResults(recommendations, summaryInfo);
+                    resultsContainer.classList.remove('hidden');
+                    errorContainer.classList.add('hidden');
+                } catch (error) {
+                    console.error('Hesaplama sırasında hata:', error);
+                    showError(error.message);
+                } finally {
+                    showLoading(false);
+                    resultsCard.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+
+            // --- OLAY DİNLEYİCİLER VE BAŞLANGIÇ AYARLARI ---
+            fieldRadio.addEventListener('change', toggleEnvironmentInputs);
+            potRadio.addEventListener('change', toggleEnvironmentInputs);
+            toggleEnvironmentInputs();
+            document.getElementById('date').valueAsDate = new Date();
+            
+            // Sayfa yüklendiğinde verileri otomatik çek
+            await loadInitialData();
+        });
+    </script>
+</body>
+</html>

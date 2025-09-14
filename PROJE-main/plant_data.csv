@@ -1,0 +1,9 @@
+plant_name,stage,duration_days,kc_value
+Biber,initial,20,0.70
+Biber,development,25,0.85
+Biber,mid_season,50,1.05
+Biber,late_season,30,0.85
+Domates,initial,25,0.35
+Domates,development,20,0.65
+Domates,mid_season,40,1.00
+Domates,late_season,20,0.80
