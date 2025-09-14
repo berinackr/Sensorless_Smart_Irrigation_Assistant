@@ -1,6 +1,3 @@
-
-![Screenshot](Screenshots/title1.png)
-
 # 🌿 Sensorless Smart Irrigation Assistant
 
 ## Background & Achievement  
